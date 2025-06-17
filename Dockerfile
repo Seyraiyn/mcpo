@@ -8,11 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/* && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm via NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/* && \
-    node -v && npm -v
+    && rm -rf /var/lib/apt/lists/*
+
+# (Optional) Check versions - can be removed for production
+RUN node -v && npm -v
 
 # Copy your whole project (including pyproject.toml, mcpo src, etc) into /app
 COPY . /app
@@ -21,6 +25,7 @@ WORKDIR /app
 
 # Make sure entrypoint is copied and executable
 COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Create uv-managed virtual environment
 ENV VIRTUAL_ENV=/app/.venv
@@ -28,9 +33,10 @@ RUN uv venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install your app (assumes correct pyproject.toml/setup.cfg)
-RUN uv pip install . && \
-    rm -rf ~/.cache && \
-    which mcpo
+RUN uv pip install . && rm -rf ~/.cache
+
+# (Optional) Verify install
+RUN which mcpo
 
 # Set environment variables as needed (edit as desired)
 ENV CONFIG_FILE=/app/config.json
